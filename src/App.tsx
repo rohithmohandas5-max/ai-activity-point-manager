@@ -5,7 +5,6 @@ import { AppShell } from '@/components/AppShell';
 import { supabase } from '@/utils/supabase';
 
 import {
-  SAMPLE_STUDENT,
   type Activity,
   type ProofSubmission,
   type CompletedActivity,
@@ -118,25 +117,22 @@ function App() {
   }, [activeKey]);
 
   const student: Student = {
-    ...SAMPLE_STUDENT,
-
     id:
-      userProfile?.id ??
-      SAMPLE_STUDENT.id,
+      userProfile?.id ?? '',
 
     name:
       userProfile?.full_name ??
-      SAMPLE_STUDENT.name,
+      'Student',
 
     email:
-      userProfile?.email ??
-      SAMPLE_STUDENT.email,
+      userProfile?.email ?? '',
 
     department:
       userProfile?.department ??
-      SAMPLE_STUDENT.department,
+      'Not specified',
 
-    points: studentPoints,
+    points:
+      studentPoints,
   };
 
   function setDashboardForRole(r: Role) {
@@ -2599,6 +2595,9 @@ function App() {
             }
             activities={
               activities
+            }
+            providerCount={
+              adminProviders.length
             }
             onNavigate={
               setActiveKey
