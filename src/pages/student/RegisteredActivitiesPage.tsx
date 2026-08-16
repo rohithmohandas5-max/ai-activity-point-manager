@@ -169,6 +169,9 @@ export function RegisteredActivitiesPage({
                 proof?.status ??
                 'not_submitted';
 
+              const completed =
+                status === 'approved';
+
               return (
                 <div
                   key={activity.id}
@@ -204,8 +207,22 @@ export function RegisteredActivitiesPage({
                           {activity.date}
                         </span>
 
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                          Registered
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-semibold ring-1 ring-inset',
+                            completed
+                              ? 'bg-emerald-100 text-emerald-700 ring-emerald-300'
+                              : 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+                          )}
+                        >
+                          {completed ? (
+                            <>
+                              <CheckCircle2 className="h-3 w-3" />
+                              Completed
+                            </>
+                          ) : (
+                            'Registered'
+                          )}
                         </span>
                       </div>
                     </div>

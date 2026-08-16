@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Role } from '@/types/nav';
 import { LoginPage } from '@/pages/LoginPage';
 import { AppShell } from '@/components/AppShell';
@@ -62,10 +62,14 @@ function getFileName(path: string) {
 }
 
 function App() {
-  const [role, setRole] = useState<Role | null>(null);
+  const [role, setRole] =
+    useState<Role | null>(null);
 
   const [authLoading, setAuthLoading] =
     useState(true);
+
+  const loggingOutRef =
+    useRef(false);
 
   const [userProfile, setUserProfile] =
     useState<{
@@ -101,7 +105,9 @@ function App() {
     useState<Activity[]>([]);
 
   const [registrations, setRegistrations] =
-    useState<Set<string>>(new Set());
+    useState<Set<string>>(
+      new Set(),
+    );
 
   const [proofs, setProofs] =
     useState<ProofSubmission[]>([]);
@@ -110,11 +116,15 @@ function App() {
     useState<CompletedActivity[]>([]);
 
   useEffect(() => {
+    if (!role) {
+      return;
+    }
+
     sessionStorage.setItem(
       'activity-manager-active-page',
       activeKey,
     );
-  }, [activeKey]);
+  }, [activeKey, role]);
 
   const student: Student = {
     id:
@@ -135,7 +145,30 @@ function App() {
       studentPoints,
   };
 
-  function setDashboardForRole(r: Role) {
+  function clearApplicationData() {
+    setRole(null);
+    setUserProfile(null);
+
+    setActivities([]);
+    setAdminStudents([]);
+    setAdminProviders([]);
+    setProofs([]);
+    setCompleted([]);
+
+    setRegistrations(
+      new Set(),
+    );
+
+    setStudentPoints({
+      c1: 0,
+      c2: 0,
+      c3: 0,
+    });
+  }
+
+  function setDashboardForRole(
+    r: Role,
+  ) {
     setActiveKey(
       getDashboardForRole(r),
     );
@@ -151,7 +184,8 @@ function App() {
     if (
       category === '1' ||
       category === 'c1' ||
-      category === 'category 1'
+      category ===
+        'category 1'
     ) {
       return 'c1';
     }
@@ -159,7 +193,8 @@ function App() {
     if (
       category === '2' ||
       category === 'c2' ||
-      category === 'category 2'
+      category ===
+        'category 2'
     ) {
       return 'c2';
     }
@@ -167,7 +202,8 @@ function App() {
     if (
       category === '3' ||
       category === 'c3' ||
-      category === 'category 3'
+      category ===
+        'category 3'
     ) {
       return 'c3';
     }
@@ -200,9 +236,12 @@ function App() {
           approval_status,
           rejection_reason
         `)
-        .order('activity_date', {
-          ascending: true,
-        });
+        .order(
+          'activity_date',
+          {
+            ascending: true,
+          },
+        );
 
     if (error) {
       console.error(
@@ -225,12 +264,15 @@ function App() {
       ),
     ];
 
-    let providerNames = new Map<
-      string,
-      string
-    >();
+    let providerNames =
+      new Map<
+        string,
+        string
+      >();
 
-    if (providerIds.length > 0) {
+    if (
+      providerIds.length > 0
+    ) {
       const {
         data: providers,
       } = await supabase
@@ -243,79 +285,90 @@ function App() {
           providerIds,
         );
 
-      providerNames = new Map(
-        (providers ?? []).map(
-          (provider) => [
-            provider.id,
+      providerNames =
+        new Map(
+          (providers ?? []).map(
+            (provider) => [
+              provider.id,
 
-            provider.full_name ??
-              'Activity Provider',
-          ],
-        ),
-      );
+              provider.full_name ??
+                'Activity Provider',
+            ],
+          ),
+        );
     }
 
-    const mappedActivities: Activity[] =
-      (data ?? []).map((row) => {
-        const status: Activity['status'] =
-          row.approval_status ===
-          'approved'
-            ? 'approved'
-            : row.approval_status ===
-                'rejected'
-              ? 'rejected'
-              : 'pending';
+    const mappedActivities:
+      Activity[] =
+      (data ?? []).map(
+        (row) => {
+          const status:
+            Activity['status'] =
+            row.approval_status ===
+            'approved'
+              ? 'approved'
+              : row.approval_status ===
+                  'rejected'
+                ? 'rejected'
+                : 'pending';
 
-        return {
-          id:
-            String(row.id),
+          return {
+            id:
+              String(
+                row.id,
+              ),
 
-          title:
-            row.title,
+            title:
+              row.title,
 
-          description:
-            row.description ?? '',
+            description:
+              row.description ??
+              '',
 
-          category:
-            Number(
-              row.category,
-            ),
+            category:
+              Number(
+                row.category,
+              ),
 
-          points:
-            Number(
-              row.points,
-            ),
+            points:
+              Number(
+                row.points,
+              ),
 
-          date:
-            row.activity_date ?? '',
+            date:
+              row.activity_date ??
+              '',
 
-          venue:
-            row.venue ?? '',
+            venue:
+              row.venue ??
+              '',
 
-          deadline:
-            row.registration_deadline ??
-            '',
+            deadline:
+              row.registration_deadline ??
+              '',
 
-          eligibility:
-            row.eligibility ?? '',
+            eligibility:
+              row.eligibility ??
+              '',
 
-          link:
-            row.registration_link ??
-            '',
+            link:
+              row.registration_link ??
+              '',
 
-          status,
+            status,
 
-          provider:
-            providerNames.get(
-              row.created_by,
-            ) ??
-            'Activity Provider',
+            provider:
+              providerNames.get(
+                row.created_by,
+              ) ??
+              'Activity Provider',
 
-          rejectionReason:
-            row.rejection_reason ??
-            undefined,
-        };
-      });
+            rejectionReason:
+              row.rejection_reason ??
+              undefined,
+          };
+        },
+      );
 
     setActivities(
       mappedActivities,
@@ -373,16 +426,25 @@ function App() {
           transaction.points,
         ) || 0;
 
-      if (category === 'c1') {
-        totals.c1 += points;
+      if (
+        category === 'c1'
+      ) {
+        totals.c1 +=
+          points;
       }
 
-      if (category === 'c2') {
-        totals.c2 += points;
+      if (
+        category === 'c2'
+      ) {
+        totals.c2 +=
+          points;
       }
 
-      if (category === 'c3') {
-        totals.c3 += points;
+      if (
+        category === 'c3'
+      ) {
+        totals.c3 +=
+          points;
       }
     }
 
@@ -435,7 +497,8 @@ function App() {
   async function loadAdminStudents() {
     const {
       data: profiles,
-      error: profileError,
+      error:
+        profileError,
     } = await supabase
       .from('profiles')
       .select(
@@ -445,9 +508,12 @@ function App() {
         'role',
         'student',
       )
-      .order('full_name', {
-        ascending: true,
-      });
+      .order(
+        'full_name',
+        {
+          ascending: true,
+        },
+      );
 
     if (profileError) {
       console.error(
@@ -460,7 +526,8 @@ function App() {
     }
 
     const {
-      data: transactions,
+      data:
+        transactions,
       error: pointError,
     } = await supabase
       .from(
@@ -529,20 +596,30 @@ function App() {
           transaction.points,
         ) || 0;
 
-      if (category === 'c1') {
-        totals.c1 += points;
+      if (
+        category === 'c1'
+      ) {
+        totals.c1 +=
+          points;
       }
 
-      if (category === 'c2') {
-        totals.c2 += points;
+      if (
+        category === 'c2'
+      ) {
+        totals.c2 +=
+          points;
       }
 
-      if (category === 'c3') {
-        totals.c3 += points;
+      if (
+        category === 'c3'
+      ) {
+        totals.c3 +=
+          points;
       }
     }
 
-    const realStudents: AdminStudent[] =
+    const realStudents:
+      AdminStudent[] =
       (profiles ?? []).map(
         (profile) => {
           const points =
@@ -586,8 +663,10 @@ function App() {
 
   async function loadAdminProviders() {
     const {
-      data: providerProfiles,
-      error: providerError,
+      data:
+        providerProfiles,
+      error:
+        providerError,
     } = await supabase
       .from('profiles')
       .select(
@@ -597,9 +676,12 @@ function App() {
         'role',
         'activity_provider',
       )
-      .order('full_name', {
-        ascending: true,
-      });
+      .order(
+        'full_name',
+        {
+          ascending: true,
+        },
+      );
 
     if (providerError) {
       console.error(
@@ -613,7 +695,8 @@ function App() {
 
     const {
       data: activityRows,
-      error: activityError,
+      error:
+        activityError,
     } = await supabase
       .from('activities')
       .select(
@@ -631,8 +714,10 @@ function App() {
     }
 
     const {
-      data: studentActivities,
-      error: participantError,
+      data:
+        studentActivities,
+      error:
+        participantError,
     } = await supabase
       .from(
         'student_activities',
@@ -641,7 +726,9 @@ function App() {
         'activity_id, student_id',
       );
 
-    if (participantError) {
+    if (
+      participantError
+    ) {
       console.error(
         'Unable to load participants:',
         participantError,
@@ -651,68 +738,73 @@ function App() {
       return;
     }
 
-    const realProviders: AdminProvider[] =
+    const realProviders:
+      AdminProvider[] =
       (
-        providerProfiles ?? []
-      ).map((provider) => {
-        const providerActivities =
-          (
-            activityRows ?? []
-          ).filter(
-            (activity) =>
-              activity.created_by ===
-              provider.id,
-          );
-
-        const activityIds =
-          new Set(
-            providerActivities.map(
-              (activity) =>
-                String(
-                  activity.id,
-                ),
-            ),
-          );
-
-        const students =
-          new Set(
+        providerProfiles ??
+        []
+      ).map(
+        (provider) => {
+          const providerActivities =
             (
-              studentActivities ??
+              activityRows ??
               []
-            )
-              .filter(
-                (
-                  registration,
-                ) =>
-                  activityIds.has(
-                    String(
-                      registration.activity_id,
-                    ),
+            ).filter(
+              (activity) =>
+                activity.created_by ===
+                provider.id,
+            );
+
+          const activityIds =
+            new Set(
+              providerActivities.map(
+                (activity) =>
+                  String(
+                    activity.id,
                   ),
-              )
-              .map(
-                (
-                  registration,
-                ) =>
-                  registration.student_id,
               ),
-          );
+            );
 
-        return {
-          id:
-            provider.id,
+          const students =
+            new Set(
+              (
+                studentActivities ??
+                []
+              )
+                .filter(
+                  (
+                    registration,
+                  ) =>
+                    activityIds.has(
+                      String(
+                        registration.activity_id,
+                      ),
+                    ),
+                )
+                .map(
+                  (
+                    registration,
+                  ) =>
+                    registration.student_id,
+                ),
+            );
 
-          name:
-            provider.full_name ??
-            'Activity Provider',
+          return {
+            id:
+              provider.id,
 
-          activities:
-            providerActivities.length,
+            name:
+              provider.full_name ??
+              'Activity Provider',
 
-          students:
-            students.size,
-        };
-      });
+            activities:
+              providerActivities.length,
+
+            students:
+              students.size,
+          };
+        },
+      );
 
     setAdminProviders(
       realProviders,
@@ -729,12 +821,13 @@ function App() {
     const {
       data,
       error,
-    } = await supabase.storage
-      .from('proofs')
-      .createSignedUrl(
-        path,
-        60 * 60,
-      );
+    } =
+      await supabase.storage
+        .from('proofs')
+        .createSignedUrl(
+          path,
+          60 * 60,
+        );
 
     if (error) {
       console.error(
@@ -751,7 +844,8 @@ function App() {
   async function loadProofs() {
     const {
       data: proofRows,
-      error: proofError,
+      error:
+        proofError,
     } = await supabase
       .from(
         'proof_submissions',
@@ -787,7 +881,8 @@ function App() {
 
     if (
       !proofRows ||
-      proofRows.length === 0
+      proofRows.length ===
+        0
     ) {
       setProofs([]);
       setCompleted([]);
@@ -796,14 +891,16 @@ function App() {
     }
 
     const studentActivityIds =
-      proofRows.map((proof) =>
-        Number(
-          proof.student_activity_id,
-        ),
+      proofRows.map(
+        (proof) =>
+          Number(
+            proof.student_activity_id,
+          ),
       );
 
     const {
-      data: studentActivityRows,
+      data:
+        studentActivityRows,
       error: saError,
     } = await supabase
       .from(
@@ -858,8 +955,12 @@ function App() {
 
     let studentProfiles: {
       id: string;
-      full_name: string | null;
-      student_id: string | null;
+      full_name:
+        | string
+        | null;
+      student_id:
+        | string
+        | null;
     }[] = [];
 
     if (
@@ -950,11 +1051,14 @@ function App() {
 
     let providerProfiles: {
       id: string;
-      full_name: string | null;
+      full_name:
+        | string
+        | null;
     }[] = [];
 
     if (
-      providerIds.length > 0
+      providerIds.length >
+      0
     ) {
       const {
         data,
@@ -986,10 +1090,14 @@ function App() {
         (
           studentActivityRows ??
           []
-        ).map((row) => [
-          String(row.id),
-          row,
-        ]),
+        ).map(
+          (row) => [
+            String(
+              row.id,
+            ),
+            row,
+          ],
+        ),
       );
 
     const studentMap =
@@ -1029,7 +1137,9 @@ function App() {
     const realProofs =
       await Promise.all(
         proofRows.map(
-          async (proof) => {
+          async (
+            proof,
+          ) => {
             const studentActivity =
               studentActivityMap.get(
                 String(
@@ -1055,7 +1165,9 @@ function App() {
                 ),
               );
 
-            if (!activity) {
+            if (
+              !activity
+            ) {
               return null;
             }
 
@@ -1076,7 +1188,8 @@ function App() {
                   )
                 : undefined;
 
-            const mappedProof: ProofSubmission =
+            const mappedProof:
+              ProofSubmission =
               {
                 id:
                   String(
@@ -1189,7 +1302,8 @@ function App() {
       await supabase.auth.getUser();
 
     if (user) {
-      const realCompleted: CompletedActivity[] =
+      const realCompleted:
+        CompletedActivity[] =
         finalProofs
           .filter(
             (proof) =>
@@ -1198,25 +1312,27 @@ function App() {
               proof.status ===
                 'approved',
           )
-          .map((proof) => ({
-            id:
-              `completed-${proof.id}`,
+          .map(
+            (proof) => ({
+              id:
+                `completed-${proof.id}`,
 
-            title:
-              proof.activityTitle,
+              title:
+                proof.activityTitle,
 
-            category:
-              proof.category,
+              category:
+                proof.category,
 
-            points:
-              proof.points,
+              points:
+                proof.points,
 
-            date:
-              proof.submissionDate,
+              date:
+                proof.submissionDate,
 
-            status:
-              'Completed',
-          }));
+              status:
+                'Completed',
+            }),
+          );
 
       setCompleted(
         realCompleted,
@@ -1237,6 +1353,12 @@ function App() {
   async function loadUserRole(
     userId: string,
   ) {
+    if (
+      loggingOutRef.current
+    ) {
+      return;
+    }
+
     const {
       data: profile,
       error,
@@ -1255,27 +1377,16 @@ function App() {
       .single();
 
     if (
+      loggingOutRef.current
+    ) {
+      return;
+    }
+
+    if (
       error ||
       !profile
     ) {
-      setRole(null);
-      setUserProfile(null);
-      setActivities([]);
-      setAdminStudents([]);
-      setAdminProviders([]);
-      setProofs([]);
-      setCompleted([]);
-
-      setRegistrations(
-        new Set(),
-      );
-
-      setStudentPoints({
-        c1: 0,
-        c2: 0,
-        c3: 0,
-      });
-
+      clearApplicationData();
       return;
     }
 
@@ -1283,6 +1394,12 @@ function App() {
       data: { user },
     } =
       await supabase.auth.getUser();
+
+    if (
+      loggingOutRef.current
+    ) {
+      return;
+    }
 
     setUserProfile({
       id:
@@ -1295,7 +1412,8 @@ function App() {
         profile.department,
 
       email:
-        user?.email ?? '',
+        user?.email ??
+        '',
     });
 
     const appRole: Role =
@@ -1305,7 +1423,8 @@ function App() {
         : (profile.role as Role);
 
     if (
-      appRole === 'student'
+      appRole ===
+      'student'
     ) {
       await Promise.all([
         loadStudentPoints(
@@ -1318,6 +1437,12 @@ function App() {
 
         loadProofs(),
       ]);
+
+      if (
+        loggingOutRef.current
+      ) {
+        return;
+      }
 
       setAdminStudents([]);
       setAdminProviders([]);
@@ -1338,7 +1463,14 @@ function App() {
     await loadActivities();
 
     if (
-      appRole === 'admin'
+      loggingOutRef.current
+    ) {
+      return;
+    }
+
+    if (
+      appRole ===
+      'admin'
     ) {
       await loadAdminData();
     } else {
@@ -1353,10 +1485,18 @@ function App() {
       }
     }
 
+    if (
+      loggingOutRef.current
+    ) {
+      return;
+    }
+
     setRole(appRole);
 
     setActiveKey(
-      (currentPage) => {
+      (
+        currentPage,
+      ) => {
         if (
           pageBelongsToRole(
             currentPage,
@@ -1374,7 +1514,8 @@ function App() {
   }
 
   useEffect(() => {
-    let mounted = true;
+    let mounted =
+      true;
 
     async function restoreSession() {
       const {
@@ -1382,35 +1523,25 @@ function App() {
       } =
         await supabase.auth.getSession();
 
-      if (!mounted) {
+      if (
+        !mounted
+      ) {
         return;
       }
 
-      if (session?.user) {
+      if (
+        session?.user
+      ) {
         await loadUserRole(
           session.user.id,
         );
       } else {
-        setRole(null);
-        setUserProfile(null);
-        setActivities([]);
-        setAdminStudents([]);
-        setAdminProviders([]);
-        setProofs([]);
-        setCompleted([]);
-
-        setRegistrations(
-          new Set(),
-        );
-
-        setStudentPoints({
-          c1: 0,
-          c2: 0,
-          c3: 0,
-        });
+        clearApplicationData();
       }
 
-      if (mounted) {
+      if (
+        mounted
+      ) {
         setAuthLoading(
           false,
         );
@@ -1420,7 +1551,9 @@ function App() {
     void restoreSession();
 
     const {
-      data: { subscription },
+      data: {
+        subscription,
+      },
     } =
       supabase.auth.onAuthStateChange(
         (
@@ -1431,30 +1564,21 @@ function App() {
             event ===
             'SIGNED_OUT'
           ) {
-            setRole(null);
-            setUserProfile(
-              null,
-            );
-            setActivities([]);
-            setAdminStudents([]);
-            setAdminProviders([]);
-            setProofs([]);
-            setCompleted([]);
-
-            setRegistrations(
-              new Set(),
-            );
-
-            setStudentPoints({
-              c1: 0,
-              c2: 0,
-              c3: 0,
-            });
+            clearApplicationData();
 
             setAuthLoading(
               false,
             );
 
+            loggingOutRef.current =
+              false;
+
+            return;
+          }
+
+          if (
+            loggingOutRef.current
+          ) {
             return;
           }
 
@@ -1471,7 +1595,9 @@ function App() {
       );
 
     return () => {
-      mounted = false;
+      mounted =
+        false;
+
       subscription.unsubscribe();
     };
   }, []);
@@ -1479,6 +1605,9 @@ function App() {
   function handleLogin(
     r: Role,
   ) {
+    loggingOutRef.current =
+      false;
+
     setRole(r);
 
     setDashboardForRole(
@@ -1487,45 +1616,61 @@ function App() {
 
     void loadActivities();
 
-    if (r === 'admin') {
+    if (
+      r ===
+      'admin'
+    ) {
       void loadAdminData();
     }
   }
 
   async function handleLogout() {
-    await supabase.auth.signOut();
+    if (
+      loggingOutRef.current
+    ) {
+      return;
+    }
 
-    setRole(null);
-    setUserProfile(null);
-    setActivities([]);
-    setAdminStudents([]);
-    setAdminProviders([]);
-    setProofs([]);
-    setCompleted([]);
-
-    setRegistrations(
-      new Set(),
-    );
-
-    setStudentPoints({
-      c1: 0,
-      c2: 0,
-      c3: 0,
-    });
-
-    setActiveKey(
-      'student-dashboard',
-    );
+    loggingOutRef.current =
+      true;
 
     sessionStorage.removeItem(
       'activity-manager-active-page',
     );
+
+    clearApplicationData();
+
+    setAuthLoading(
+      false,
+    );
+
+    const {
+      error,
+    } =
+      await supabase.auth.signOut();
+
+    if (error) {
+      console.error(
+        'Unable to sign out:',
+        error,
+      );
+
+      loggingOutRef.current =
+        false;
+
+      alert(
+        `Unable to sign out: ${error.message}`,
+      );
+    }
   }
 
   function handleNavigate(
     key: string,
   ) {
-    if (key === 'logout') {
+    if (
+      key ===
+      'logout'
+    ) {
       void handleLogout();
       return;
     }
@@ -1557,7 +1702,9 @@ function App() {
       return;
     }
 
-    const { error } =
+    const {
+      error,
+    } =
       await supabase
         .from(
           'student_activities',
@@ -1591,7 +1738,9 @@ function App() {
         setRegistrations(
           (prev) => {
             const next =
-              new Set(prev);
+              new Set(
+                prev,
+              );
 
             next.add(
               activityId,
@@ -1614,7 +1763,9 @@ function App() {
     setRegistrations(
       (prev) => {
         const next =
-          new Set(prev);
+          new Set(
+            prev,
+          );
 
         next.add(
           activityId,
@@ -1641,9 +1792,13 @@ function App() {
       return false;
     }
 
-    const { error } =
+    const {
+      error,
+    } =
       await supabase
-        .from('activities')
+        .from(
+          'activities',
+        )
         .insert({
           title:
             activity.title,
@@ -1724,7 +1879,8 @@ function App() {
     }
 
     const {
-      data: studentActivity,
+      data:
+        studentActivity,
       error:
         registrationError,
     } = await supabase
@@ -1772,7 +1928,8 @@ function App() {
       `${Date.now()}-${safeFileName}`;
 
     const {
-      error: uploadError,
+      error:
+        uploadError,
     } =
       await supabase.storage
         .from('proofs')
@@ -1806,7 +1963,8 @@ function App() {
     }
 
     const {
-      data: existingProof,
+      data:
+        existingProof,
       error:
         existingProofError,
     } = await supabase
@@ -1838,9 +1996,12 @@ function App() {
       return false;
     }
 
-    if (existingProof) {
+    if (
+      existingProof
+    ) {
       const {
-        error: updateError,
+        error:
+          updateError,
       } = await supabase
         .from(
           'proof_submissions',
@@ -1875,7 +2036,9 @@ function App() {
           existingProof.id,
         );
 
-      if (updateError) {
+      if (
+        updateError
+      ) {
         await supabase.storage
           .from('proofs')
           .remove([
@@ -1902,7 +2065,8 @@ function App() {
       }
     } else {
       const {
-        error: insertError,
+        error:
+          insertError,
       } = await supabase
         .from(
           'proof_submissions',
@@ -1924,7 +2088,9 @@ function App() {
             'pending',
         });
 
-      if (insertError) {
+      if (
+        insertError
+      ) {
         await supabase.storage
           .from('proofs')
           .remove([
@@ -1948,7 +2114,10 @@ function App() {
     proofId: string,
   ): Promise<boolean> {
     const {
-      data: { user: adminUser },
+      data: {
+        user:
+          adminUser,
+      },
     } =
       await supabase.auth.getUser();
 
@@ -1961,8 +2130,10 @@ function App() {
     }
 
     const {
-      data: proofRecord,
-      error: proofError,
+      data:
+        proofRecord,
+      error:
+        proofError,
     } = await supabase
       .from(
         'proof_submissions',
@@ -1974,7 +2145,9 @@ function App() {
       `)
       .eq(
         'id',
-        Number(proofId),
+        Number(
+          proofId,
+        ),
       )
       .single();
 
@@ -1995,8 +2168,10 @@ function App() {
     }
 
     const {
-      data: studentActivity,
-      error: studentActivityError,
+      data:
+        studentActivity,
+      error:
+        studentActivityError,
     } = await supabase
       .from(
         'student_activities',
@@ -2030,10 +2205,14 @@ function App() {
     }
 
     const {
-      data: activity,
-      error: activityError,
+      data:
+        activity,
+      error:
+        activityError,
     } = await supabase
-      .from('activities')
+      .from(
+        'activities',
+      )
       .select(`
         id,
         category,
@@ -2077,7 +2256,8 @@ function App() {
       );
 
     const {
-      data: existingTransaction,
+      data:
+        existingTransaction,
       error:
         transactionCheckError,
     } = await supabase
@@ -2087,7 +2267,9 @@ function App() {
       .select('id')
       .eq(
         'proof_submission_id',
-        Number(proofId),
+        Number(
+          proofId,
+        ),
       )
       .maybeSingle();
 
@@ -2110,7 +2292,8 @@ function App() {
       !existingTransaction
     ) {
       const {
-        error: insertPointError,
+        error:
+          insertPointError,
       } = await supabase
         .from(
           'point_transactions',
@@ -2123,7 +2306,9 @@ function App() {
             studentActivity.activity_id,
 
           proof_submission_id:
-            Number(proofId),
+            Number(
+              proofId,
+            ),
 
           category,
 
@@ -2133,7 +2318,9 @@ function App() {
             adminUser.id,
         });
 
-      if (insertPointError) {
+      if (
+        insertPointError
+      ) {
         console.error(
           'Unable to award points:',
           insertPointError,
@@ -2209,7 +2396,9 @@ function App() {
       })
       .eq(
         'id',
-        Number(proofId),
+        Number(
+          proofId,
+        ),
       );
 
     if (
@@ -2241,7 +2430,10 @@ function App() {
     reason: string,
   ): Promise<boolean> {
     const {
-      data: { user: adminUser },
+      data: {
+        user:
+          adminUser,
+      },
     } =
       await supabase.auth.getUser();
 
@@ -2254,8 +2446,10 @@ function App() {
     }
 
     const {
-      data: proofRecord,
-      error: proofError,
+      data:
+        proofRecord,
+      error:
+        proofError,
     } = await supabase
       .from(
         'proof_submissions',
@@ -2266,7 +2460,9 @@ function App() {
       `)
       .eq(
         'id',
-        Number(proofId),
+        Number(
+          proofId,
+        ),
       )
       .single();
 
@@ -2285,7 +2481,8 @@ function App() {
       new Date().toISOString();
 
     const {
-      error: rejectError,
+      error:
+        rejectError,
     } = await supabase
       .from(
         'proof_submissions',
@@ -2305,10 +2502,14 @@ function App() {
       })
       .eq(
         'id',
-        Number(proofId),
+        Number(
+          proofId,
+        ),
       );
 
-    if (rejectError) {
+    if (
+      rejectError
+    ) {
       console.error(
         'Unable to reject proof:',
         rejectError,
@@ -2360,9 +2561,13 @@ function App() {
   async function handleApproveActivity(
     id: string,
   ) {
-    const { error } =
+    const {
+      error,
+    } =
       await supabase
-        .from('activities')
+        .from(
+          'activities',
+        )
         .update({
           approval_status:
             'approved',
@@ -2372,7 +2577,9 @@ function App() {
         })
         .eq(
           'id',
-          Number(id),
+          Number(
+            id,
+          ),
         );
 
     if (error) {
@@ -2395,9 +2602,13 @@ function App() {
     id: string,
     reason: string,
   ) {
-    const { error } =
+    const {
+      error,
+    } =
       await supabase
-        .from('activities')
+        .from(
+          'activities',
+        )
         .update({
           approval_status:
             'rejected',
@@ -2407,7 +2618,9 @@ function App() {
         })
         .eq(
           'id',
-          Number(id),
+          Number(
+            id,
+          ),
         );
 
     if (error) {
@@ -2433,7 +2646,8 @@ function App() {
           <div className="mx-auto h-9 w-9 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600" />
 
           <p className="mt-4 text-sm text-slate-500">
-            Checking your session...
+            Checking your
+            session...
           </p>
         </div>
       </div>
@@ -2443,7 +2657,9 @@ function App() {
   if (!role) {
     return (
       <LoginPage
-        onLogin={handleLogin}
+        onLogin={
+          handleLogin
+        }
       />
     );
   }
@@ -2468,14 +2684,18 @@ function App() {
       case 'student-dashboard':
         return (
           <StudentDashboard
-            student={student}
+            student={
+              student
+            }
             activities={
               activities
             }
             registrations={
               registrations
             }
-            proofs={proofs}
+            proofs={
+              proofs
+            }
             completed={
               completed
             }
@@ -2488,7 +2708,9 @@ function App() {
       case 'student-points':
         return (
           <MyPointsPage
-            student={student}
+            student={
+              student
+            }
           />
         );
 
@@ -2510,11 +2732,15 @@ function App() {
       case 'student-registered':
         return (
           <RegisteredActivitiesPage
-            student={student}
+            student={
+              student
+            }
             registrations={
               registeredActivities
             }
-            proofs={proofs}
+            proofs={
+              proofs
+            }
             onSubmitProof={
               handleSubmitProof
             }
@@ -2524,14 +2750,18 @@ function App() {
       case 'student-ai':
         return (
           <AIRecommendationsPage
-            student={student}
+            student={
+              student
+            }
             activities={
               activities
             }
             registrations={
               registrations
             }
-            proofs={proofs}
+            proofs={
+              proofs
+            }
             completed={
               completed
             }
@@ -2553,7 +2783,9 @@ function App() {
       case 'student-profile':
         return (
           <ProfilePage
-            student={student}
+            student={
+              student
+            }
           />
         );
 
@@ -2664,7 +2896,9 @@ function App() {
       case 'admin-verifications':
         return (
           <PointVerificationsPage
-            proofs={proofs}
+            proofs={
+              proofs
+            }
             onApprove={
               handleApproveProof
             }
