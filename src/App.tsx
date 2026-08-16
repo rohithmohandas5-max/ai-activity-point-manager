@@ -197,7 +197,8 @@ function App() {
           registration_link,
           points,
           created_by,
-          approval_status
+          approval_status,
+          rejection_reason
         `)
         .order('activity_date', {
           ascending: true,
@@ -266,7 +267,8 @@ function App() {
               : 'pending';
 
         return {
-          id: String(row.id),
+          id:
+            String(row.id),
 
           title:
             row.title,
@@ -275,10 +277,14 @@ function App() {
             row.description ?? '',
 
           category:
-            Number(row.category),
+            Number(
+              row.category,
+            ),
 
           points:
-            Number(row.points),
+            Number(
+              row.points,
+            ),
 
           date:
             row.activity_date ?? '',
@@ -304,6 +310,10 @@ function App() {
               row.created_by,
             ) ??
             'Activity Provider',
+
+          rejectionReason:
+            row.rejection_reason ??
+            undefined,
         };
       });
 
@@ -2383,6 +2393,7 @@ function App() {
 
   async function handleRejectActivity(
     id: string,
+    reason: string,
   ) {
     const { error } =
       await supabase
@@ -2390,6 +2401,9 @@ function App() {
         .update({
           approval_status:
             'rejected',
+
+          rejection_reason:
+            reason,
         })
         .eq(
           'id',

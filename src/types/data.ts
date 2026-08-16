@@ -13,6 +13,7 @@ export interface Activity {
   link: string;
   status: 'approved' | 'pending' | 'rejected';
   provider: string;
+  rejectionReason?: string;
 }
 
 export interface CompletedActivity {

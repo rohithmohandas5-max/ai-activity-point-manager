@@ -5,6 +5,7 @@ import {
   X,
   AlertCircle,
 } from 'lucide-react';
+
 import type { Activity } from '@/types/data';
 import { CATEGORY_NAMES } from '@/types/nav';
 import { PageHeader } from '@/components/PageHeader';
@@ -14,7 +15,9 @@ interface AddActivityPageProps {
   onCancel: () => void;
 }
 
-function convertDateToISO(value: string): string | null {
+function convertDateToISO(
+  value: string,
+): string | null {
   const match = value
     .trim()
     .match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
@@ -27,7 +30,11 @@ function convertDateToISO(value: string): string | null {
   const month = Number(match[2]);
   const year = Number(match[3]);
 
-  const date = new Date(year, month - 1, day);
+  const date = new Date(
+    year,
+    month - 1,
+    day,
+  );
 
   const valid =
     date.getFullYear() === year &&
@@ -61,24 +68,40 @@ export function AddActivityPage({
     link: '',
   });
 
-  const [submitted, setSubmitted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [
+    submitted,
+    setSubmitted,
+  ] = useState(false);
 
-  function update<K extends keyof typeof form>(
+  const [
+    submitting,
+    setSubmitting,
+  ] = useState(false);
+
+  const [
+    errorMessage,
+    setErrorMessage,
+  ] = useState('');
+
+  function update<
+    K extends keyof typeof form,
+  >(
     key: K,
     value: (typeof form)[K],
   ) {
-    setForm((prev) => ({
-      ...prev,
+    setForm((previous) => ({
+      ...previous,
       [key]: value,
     }));
 
     setErrorMessage('');
+    setSubmitted(false);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(
+    event: React.FormEvent,
+  ) {
+    event.preventDefault();
 
     if (submitting) {
       return;
@@ -87,100 +110,134 @@ export function AddActivityPage({
     setErrorMessage('');
     setSubmitted(false);
 
-    const activityDate = convertDateToISO(form.date);
+    const title =
+      form.title.trim();
 
-    const registrationDeadline =
-      convertDateToISO(form.deadline);
+    const description =
+      form.description.trim();
+
+    const venue =
+      form.venue.trim();
+
+    const eligibility =
+      form.eligibility.trim();
+
+    const link =
+      form.link.trim();
+
+    if (!title) {
+      setErrorMessage(
+        'Activity name is required.',
+      );
+
+      return;
+    }
+
+    if (!description) {
+      setErrorMessage(
+        'Description is required.',
+      );
+
+      return;
+    }
+
+    const activityDate =
+      convertDateToISO(
+        form.date,
+      );
 
     if (!activityDate) {
       setErrorMessage(
         'Enter a valid Activity Date in DD/MM/YYYY format, for example 25/08/2026.',
       );
+
       return;
     }
+
+    const registrationDeadline =
+      convertDateToISO(
+        form.deadline,
+      );
 
     if (!registrationDeadline) {
       setErrorMessage(
         'Enter a valid Registration Deadline in DD/MM/YYYY format, for example 23/08/2026.',
       );
+
       return;
     }
 
-    if (registrationDeadline > activityDate) {
+    if (
+      registrationDeadline >
+      activityDate
+    ) {
       setErrorMessage(
         'Registration deadline cannot be after the activity date.',
       );
+
       return;
     }
 
-    const points = Number(form.points);
+    const points =
+      Number(form.points);
 
     if (
-      !Number.isFinite(points) ||
+      !Number.isInteger(points) ||
       points < 1 ||
       points > 50
     ) {
       setErrorMessage(
-        'Points offered must be between 1 and 50.',
+        'Points offered must be a whole number between 1 and 50.',
       );
-      return;
-    }
 
-    const title = form.title.trim();
-    const description = form.description.trim();
-    const venue = form.venue.trim();
-    const eligibility = form.eligibility.trim();
-    const link = form.link.trim();
-
-    if (!title) {
-      setErrorMessage('Activity name is required.');
-      return;
-    }
-
-    if (!description) {
-      setErrorMessage('Description is required.');
       return;
     }
 
     if (!venue) {
-      setErrorMessage('Venue is required.');
+      setErrorMessage(
+        'Venue is required.',
+      );
+
       return;
     }
 
     if (!eligibility) {
-      setErrorMessage('Eligibility is required.');
+      setErrorMessage(
+        'Eligibility is required.',
+      );
+
       return;
     }
 
     const newActivity: Activity = {
-      id: `act-${Date.now()}`,
+      id: '',
       title,
       description,
-      category: Number(form.category),
+      category:
+        Number(
+          form.category,
+        ),
       points,
-
-      // Supabase receives YYYY-MM-DD
-      date: activityDate,
-
+      date:
+        activityDate,
       venue,
-
-      // Supabase receives YYYY-MM-DD
-      deadline: registrationDeadline,
-
+      deadline:
+        registrationDeadline,
       eligibility,
-
-      link:
-        link ||
-        'https://university.edu/register',
-
-      status: 'pending',
-      provider: 'You',
+      link,
+      status:
+        'pending',
+      provider:
+        '',
     };
 
     setSubmitting(true);
 
     try {
-      const success = await onSubmit(newActivity);
+      const success =
+        await onSubmit(
+          newActivity,
+        );
 
       if (!success) {
         return;
@@ -257,11 +314,13 @@ export function AddActivityPage({
             <input
               type="text"
               required
-              value={form.title}
-              onChange={(e) =>
+              value={
+                form.title
+              }
+              onChange={(event) =>
                 update(
                   'title',
-                  e.target.value,
+                  event.target.value,
                 )
               }
               className="input-field"
@@ -277,11 +336,13 @@ export function AddActivityPage({
             <textarea
               required
               rows={3}
-              value={form.description}
-              onChange={(e) =>
+              value={
+                form.description
+              }
+              onChange={(event) =>
                 update(
                   'description',
-                  e.target.value,
+                  event.target.value,
                 )
               }
               className="input-field resize-none"
@@ -295,23 +356,35 @@ export function AddActivityPage({
             </label>
 
             <select
-              value={form.category}
-              onChange={(e) =>
+              value={
+                form.category
+              }
+              onChange={(event) =>
                 update(
                   'category',
-                  Number(e.target.value),
+                  Number(
+                    event.target.value,
+                  ),
                 )
               }
               className="input-field"
             >
-              {CATEGORY_NAMES.map((c) => (
-                <option
-                  key={c.id}
-                  value={c.id}
-                >
-                  {c.name}
-                </option>
-              ))}
+              {CATEGORY_NAMES.map(
+                (category) => (
+                  <option
+                    key={
+                      category.id
+                    }
+                    value={
+                      category.id
+                    }
+                  >
+                    {
+                      category.name
+                    }
+                  </option>
+                ),
+              )}
             </select>
           </div>
 
@@ -325,11 +398,14 @@ export function AddActivityPage({
               required
               min={1}
               max={50}
-              value={form.points}
-              onChange={(e) =>
+              step={1}
+              value={
+                form.points
+              }
+              onChange={(event) =>
                 update(
                   'points',
-                  e.target.value,
+                  event.target.value,
                 )
               }
               className="input-field"
@@ -345,11 +421,13 @@ export function AddActivityPage({
             <input
               type="text"
               required
-              value={form.date}
-              onChange={(e) =>
+              value={
+                form.date
+              }
+              onChange={(event) =>
                 update(
                   'date',
-                  e.target.value,
+                  event.target.value,
                 )
               }
               className="input-field"
@@ -370,11 +448,13 @@ export function AddActivityPage({
             <input
               type="text"
               required
-              value={form.deadline}
-              onChange={(e) =>
+              value={
+                form.deadline
+              }
+              onChange={(event) =>
                 update(
                   'deadline',
-                  e.target.value,
+                  event.target.value,
                 )
               }
               className="input-field"
@@ -395,11 +475,13 @@ export function AddActivityPage({
             <input
               type="text"
               required
-              value={form.venue}
-              onChange={(e) =>
+              value={
+                form.venue
+              }
+              onChange={(event) =>
                 update(
                   'venue',
-                  e.target.value,
+                  event.target.value,
                 )
               }
               className="input-field"
@@ -415,11 +497,13 @@ export function AddActivityPage({
             <input
               type="text"
               required
-              value={form.eligibility}
-              onChange={(e) =>
+              value={
+                form.eligibility
+              }
+              onChange={(event) =>
                 update(
                   'eligibility',
-                  e.target.value,
+                  event.target.value,
                 )
               }
               className="input-field"
@@ -429,28 +513,36 @@ export function AddActivityPage({
 
           <div className="sm:col-span-2">
             <label className="mb-1.5 block text-sm font-medium text-slate-700">
-              Registration Link
+              Registration Link (optional)
             </label>
 
             <input
               type="url"
-              value={form.link}
-              onChange={(e) =>
+              value={
+                form.link
+              }
+              onChange={(event) =>
                 update(
                   'link',
-                  e.target.value,
+                  event.target.value,
                 )
               }
               className="input-field"
-              placeholder="https://university.edu/register/..."
+              placeholder="https://example.com/register"
             />
+
+            <p className="mt-1 text-xs text-slate-400">
+              Leave blank if registration is handled only through this application.
+            </p>
           </div>
         </div>
 
         <div className="mt-6 flex items-center gap-3">
           <button
             type="submit"
-            disabled={submitting}
+            disabled={
+              submitting
+            }
             className="btn-primary disabled:cursor-not-allowed disabled:opacity-60"
           >
             <PlusCircle className="h-4 w-4" />
@@ -462,11 +554,16 @@ export function AddActivityPage({
 
           <button
             type="button"
-            onClick={onCancel}
-            disabled={submitting}
+            onClick={
+              onCancel
+            }
+            disabled={
+              submitting
+            }
             className="btn-ghost disabled:cursor-not-allowed disabled:opacity-60"
           >
             <X className="h-4 w-4" />
+
             Cancel
           </button>
         </div>
