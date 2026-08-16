@@ -43,6 +43,15 @@ export interface AdminStudent {
   c3: number;
 }
 
+export interface UserProfile {
+  id: string;
+  full_name: string | null;
+  student_id: string | null;
+  department: string | null;
+  role: 'student' | 'admin' | 'activity_provider' | string;
+  created_at?: string;
+}
+
 export const SAMPLE_STUDENT: Student = {
   id: 'stu-1',
   name: 'Rohith Mohandas',
