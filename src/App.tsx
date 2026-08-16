@@ -42,19 +42,32 @@ function App() {
   const [role, setRole] = useState<Role | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  const [userProfile, setUserProfile] = useState<{
+    id: string;
+    full_name: string | null;
+    department: string | null;
+    email: string;
+  } | null>(null);
+
   const [activeKey, setActiveKey] = useState<string>('student-dashboard');
   const [activities, setActivities] = useState<Activity[]>(SAMPLE_ACTIVITIES);
   const [registrations, setRegistrations] = useState<Set<string>>(new Set());
   const [proofs, setProofs] = useState<ProofSubmission[]>(SAMPLE_PROOFS);
+
   const [bonusPoints, setBonusPoints] = useState({
     c1: 0,
     c2: 0,
     c3: 0,
   });
+
   const [extraCompleted, setExtraCompleted] = useState<CompletedActivity[]>([]);
 
   const student: Student = {
     ...SAMPLE_STUDENT,
+    id: userProfile?.id ?? SAMPLE_STUDENT.id,
+    name: userProfile?.full_name ?? SAMPLE_STUDENT.name,
+    email: userProfile?.email ?? SAMPLE_STUDENT.email,
+    department: userProfile?.department ?? SAMPLE_STUDENT.department,
     points: {
       c1: BASE_POINTS.c1 + bonusPoints.c1,
       c2: BASE_POINTS.c2 + bonusPoints.c2,
@@ -66,6 +79,8 @@ function App() {
     s.id === 's-1'
       ? {
           ...s,
+          name: student.name,
+          department: student.department,
           c1: student.points.c1,
           c2: student.points.c2,
           c3: student.points.c3,
@@ -92,14 +107,26 @@ function App() {
   async function loadUserRole(userId: string) {
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('role')
+      .select('id, full_name, department, role')
       .eq('id', userId)
       .single();
 
     if (error || !profile) {
       setRole(null);
+      setUserProfile(null);
       return;
     }
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    setUserProfile({
+      id: profile.id,
+      full_name: profile.full_name,
+      department: profile.department,
+      email: user?.email ?? '',
+    });
 
     const appRole: Role =
       profile.role === 'activity_provider'
@@ -124,6 +151,7 @@ function App() {
         await loadUserRole(session.user.id);
       } else {
         setRole(null);
+        setUserProfile(null);
       }
 
       if (mounted) {
@@ -138,6 +166,7 @@ function App() {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         setRole(null);
+        setUserProfile(null);
         setActiveKey('student-dashboard');
         setAuthLoading(false);
         return;
@@ -162,6 +191,7 @@ function App() {
   async function handleLogout() {
     await supabase.auth.signOut();
     setRole(null);
+    setUserProfile(null);
     setActiveKey('student-dashboard');
   }
 
